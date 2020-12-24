@@ -6,7 +6,8 @@ var http = require("http").createServer(app);
 var io = require("socket.io")(http, {
   cors: {
     origin: "https://port.contact",
-    methods: ["GET", "POST"],
+    methods: ["GET", "POST", "DELETE"],
+    allowedHeaders: ["Content-Type"],
     credentials: true,
   },
   origins: ["https://port.contact"],
@@ -43,7 +44,13 @@ const {
 const IN_PROD = NODE_ENV === "production";
 
 // middlewares
-app.use(cors({ credentials: true, origin: "https://port.contact/" }));
+app.use(
+  cors({
+    origin: "https://port.contact",
+    allowedHeaders: ["Content-Type"],
+    credentials: true,
+  })
+);
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
