@@ -4,8 +4,12 @@ const express = require("express");
 var app = require("express")();
 var http = require("http").createServer(app);
 var io = require("socket.io")(http, {
-  cors: true,
-  origins: ["https://port.contact/"],
+  cors: {
+    origin: "https://port.contact",
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
+  origins: ["https://port.contact"],
 });
 const cookieParser = require("cookie-parser");
 const session = require("express-session");
