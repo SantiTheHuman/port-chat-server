@@ -10,7 +10,7 @@ var io = require("socket.io")(http, {
     allowedHeaders: ["Content-Type"],
     credentials: true,
   },
-  origins: ["https://port.contact"],
+  // origins: ["https://port.contact"],
 });
 const cookieParser = require("cookie-parser");
 const session = require("express-session");
@@ -102,7 +102,7 @@ app.route("/connections").post(addConnection).delete(deleteConnection);
 // IIFE to start db connection and express listening
 (async () => {
   await connectDB();
-  http.listen(PORT, () => {
+  http.listen(process.env.PORT || 80, () => {
     console.log(colors.green.inverse(`Live on http://localhost:${PORT}`));
   });
 })();
