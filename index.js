@@ -3,14 +3,22 @@ const cors = require("cors");
 // const express = require("express");
 var app = require("express")();
 var http = require("http").createServer(app);
-var io = require("socket.io")(http, {
-  cors: {
+app.use(
+  cors({
     origin: "*",
     methods: ["GET", "POST", "DELETE"],
     allowedHeaders: ["Content-Type"],
     credentials: true,
-  },
-  // origins: ["https://port.contact"],
+  })
+);
+var io = require("socket.io")(http, {
+  // cors: {
+  //   origin: "*",
+  //   methods: ["GET", "POST", "DELETE"],
+  //   allowedHeaders: ["Content-Type"],
+  //   credentials: true,
+  // },
+  origins: ["https://port.contact"],
 });
 const cookieParser = require("cookie-parser");
 const session = require("express-session");
@@ -44,14 +52,7 @@ const {
 const IN_PROD = NODE_ENV === "production";
 
 // middlewares
-app.use(
-  cors({
-    origin: "*",
-    methods: ["GET", "POST", "DELETE"],
-    allowedHeaders: ["Content-Type"],
-    credentials: true,
-  })
-);
+
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
