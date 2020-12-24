@@ -77,7 +77,7 @@ exports.getUser = async (req, res, next) => {
       user: user,
     });
   } else {
-    return res.json({
+    res.json({
       authenticated: false,
     });
   }
