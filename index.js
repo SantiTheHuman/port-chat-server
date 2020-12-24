@@ -1,6 +1,6 @@
 require("dotenv").config();
 const cors = require("cors");
-const express = require("express");
+// const express = require("express");
 var app = require("express")();
 var http = require("http").createServer(app);
 var io = require("socket.io")(http, {
@@ -74,17 +74,18 @@ app.use((err, req, res, next) => {
 });
 
 // socket
-// const io = require("socket.io");
-
 io.on("connection", (socket) => {
-  // const id = socket.handshake.query.id;
-  // socket.join(id);
-  socket.on("new message", (msg) => {
-    console.log("hi");
-    // io.emit("chat message", msg);
+  const user = socket.handshake.query.user;
+  // socket.join(user.username);
+
+  socket.on("message", (msg) => {
+    console.log(
+      `Messate to: ${msg.recipientId}. From: ${msg.senderId}. Content: ${msg.content}`
+    );
+    createMessage(msg);
   });
 
-  console.log(`connected to socket`);
+  console.log(`User ${user.username} connected to socket`);
 });
 
 // routes
@@ -93,7 +94,7 @@ app.post("/login", loginUser);
 app.get("/logout", logoutUser);
 
 app.get("/", getUser);
-app.route("/messages/:connectionId").get(getMessages).post(createMessage);
+app.route("/messages/:connectionId").get(getMessages);
 app.route("/messages/:messageId/").get(getMessageById).delete(deleteMessage);
 app.route("/connections").post(addConnection).delete(deleteConnection);
 

@@ -24,13 +24,21 @@ exports.getMessageById = async (req, res) => {
   res.json(message);
 };
 
-exports.createMessage = async (req, res) => {
-  const newMessage = await Message.create(req.body);
-  console.log(newMessage);
-  return res.status(200).json({
-    success: true,
-    newMessage: newMessage,
-  });
+exports.createMessage = async (msg, res) => {
+  try {
+    const newMessage = await Message.create(msg);
+    console.log(newMessage);
+    io.emit("message", newMessage);
+    return res.status(200).json({
+      success: true,
+      newMessage: newMessage,
+    });
+  } catch (err) {
+    return res.status(400).json({
+      success: false,
+      message: err,
+    });
+  }
 };
 
 exports.deleteMessage = async (req, res) => {
