@@ -75,7 +75,7 @@ app.use((err, req, res, next) => {
 
 // socket
 io.on("connection", (socket) => {
-  const user = socket.handshake.query.user;
+  // const user = socket.handshake.query.user;
   // socket.join(user.username);
 
   socket.on("message", (msg) => {
@@ -85,7 +85,7 @@ io.on("connection", (socket) => {
     createMessage(msg);
   });
 
-  console.log(`User ${user.username} connected to socket`);
+  console.log(`User connected to socket`);
 });
 
 // routes
