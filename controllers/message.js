@@ -28,7 +28,7 @@ exports.createMessage = async (msg, res) => {
   try {
     const newMessage = await Message.create(msg);
     console.log(newMessage);
-    io.emit("message", newMessage);
+    // io.emit("message", newMessage);
     return res.status(200).json({
       success: true,
       newMessage: newMessage,

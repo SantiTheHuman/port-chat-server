@@ -3,23 +3,15 @@ const cors = require("cors");
 // const express = require("express");
 var app = require("express")();
 var http = require("http").createServer(app);
-app.use(
-  cors({
-    origin: "*",
-    methods: ["GET", "POST", "DELETE"],
-    allowedHeaders: ["Content-Type"],
-    credentials: true,
-  })
-);
-var io = require("socket.io")(http, {
-  // cors: {
-  //   origin: "*",
-  //   methods: ["GET", "POST", "DELETE"],
-  //   allowedHeaders: ["Content-Type"],
-  //   credentials: true,
-  // },
-  origins: ["https://port.contact"],
-});
+// var io = require("socket.io")(http, {
+//   cors: {
+//     origin: "*",
+//     methods: ["GET", "POST", "DELETE"],
+//     allowedHeaders: ["Content-Type"],
+//     credentials: true,
+//   },
+//   origins: ["https://port.contact"],
+// });
 const cookieParser = require("cookie-parser");
 const session = require("express-session");
 const colors = require("colors/safe");
@@ -52,7 +44,14 @@ const {
 const IN_PROD = NODE_ENV === "production";
 
 // middlewares
-
+app.use(
+  cors({
+    origin: "*",
+    methods: ["GET", "POST", "DELETE"],
+    allowedHeaders: ["Content-Type"],
+    credentials: true,
+  })
+);
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -76,19 +75,19 @@ app.use((err, req, res, next) => {
 });
 
 // socket
-io.on("connection", (socket) => {
-  // const user = socket.handshake.query.user;
-  // socket.join(user.username);
+// io.on("connection", (socket) => {
+//   // const user = socket.handshake.query.user;
+//   // socket.join(user.username);
 
-  socket.on("message", (msg) => {
-    console.log(
-      `Messate to: ${msg.recipientId}. From: ${msg.senderId}. Content: ${msg.content}`
-    );
-    createMessage(msg);
-  });
+//   socket.on("message", (msg) => {
+//     console.log(
+//       `Messate to: ${msg.recipientId}. From: ${msg.senderId}. Content: ${msg.content}`
+//     );
+//     createMessage(msg);
+//   });
 
-  console.log(`User connected to socket`);
-});
+//   console.log(`User connected to socket`);
+// });
 
 // routes
 app.post("/register", createUser);
