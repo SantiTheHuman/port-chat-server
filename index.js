@@ -5,7 +5,7 @@ var app = require("express")();
 var http = require("http").createServer(app);
 var io = require("socket.io")(http, {
   cors: {
-    origin: "https://port.contact",
+    origin: "*",
     methods: ["GET", "POST", "DELETE"],
     allowedHeaders: ["Content-Type"],
     credentials: true,
@@ -46,7 +46,8 @@ const IN_PROD = NODE_ENV === "production";
 // middlewares
 app.use(
   cors({
-    origin: "https://port.contact",
+    origin: "*",
+    methods: ["GET", "POST", "DELETE"],
     allowedHeaders: ["Content-Type"],
     credentials: true,
   })
