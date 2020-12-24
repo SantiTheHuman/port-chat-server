@@ -5,7 +5,7 @@ var app = require("express")();
 var http = require("http").createServer(app);
 var io = require("socket.io")(http, {
   cors: true,
-  origins: ["http://localhost:3000"],
+  origins: ["https://port.contact/"],
 });
 const cookieParser = require("cookie-parser");
 const session = require("express-session");
@@ -39,7 +39,7 @@ const {
 const IN_PROD = NODE_ENV === "production";
 
 // middlewares
-app.use(cors({ credentials: true, origin: "http://localhost:3000" }));
+app.use(cors({ credentials: true, origin: "https://port.contact/" }));
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
