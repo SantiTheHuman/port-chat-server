@@ -3,16 +3,14 @@ const { Message } = require("../models");
 exports.getMessages = async (req, res) => {
   const userId = req.session.userId;
   const recipientId = req.params.connectionId;
-  const all = await Message.find()
+  const messages = await Message.find()
     .or([
       { senderId: userId, recipientId: recipientId },
       { senderId: recipientId, recipientId: userId },
     ])
-    .limit(50);
-  return res.status(200).json({
-    success: true,
-    messages: all,
-  });
+    .sort({ createdAt: -1 })
+    .limit(20);
+  return res.status(200).json(messages);
 };
 
 exports.getMessageById = async (req, res) => {
@@ -24,20 +22,17 @@ exports.getMessageById = async (req, res) => {
   res.json(message);
 };
 
-exports.createMessage = async (msg, res) => {
+exports.createMessage = async (msg) => {
   try {
     const newMessage = await Message.create(msg);
     console.log(newMessage);
-    io.emit("message", newMessage);
-    return res.status(200).json({
-      success: true,
-      newMessage: newMessage,
-    });
+    return newMessage;
   } catch (err) {
-    return res.status(400).json({
-      success: false,
-      message: err,
-    });
+    console.log(err);
+    // return res.status(400).json({
+    //   success: false,
+    //   message: err,
+    // });
   }
 };
 

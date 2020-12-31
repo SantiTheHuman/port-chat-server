@@ -1,16 +1,14 @@
 require("dotenv").config();
 const cors = require("cors");
-// const express = require("express");
-var app = require("express")();
-var http = require("http").createServer(app);
-var io = require("socket.io")(http, {
+const express = require("express");
+const app = express();
+const http = require("http").createServer(app);
+const io = require("socket.io")(http, {
   cors: {
-    origin: "https://port.contact",
+    origin: "http://localhost:3000",
     methods: ["GET", "POST", "DELETE"],
-    allowedHeaders: ["Content-Type"],
     credentials: true,
   },
-  origins: ["https://port.contact"],
 });
 const cookieParser = require("cookie-parser");
 const session = require("express-session");
@@ -24,6 +22,7 @@ const {
   getUser,
   deleteConnection,
   addConnection,
+  findUsername,
 } = require("./controllers/user");
 const {
   getMessages,
@@ -31,9 +30,8 @@ const {
   createMessage,
   deleteMessage,
 } = require("./controllers/message");
+const e = require("cors");
 
-// express application
-// const app = express();
 const TWO_HOURS = 1000 * 60 * 60 * 2;
 const {
   PORT = 4000,
@@ -43,10 +41,10 @@ const {
 } = process.env;
 const IN_PROD = NODE_ENV === "production";
 
-// middlewares
+// middlewares ///////////////////////////////////////////
 app.use(
   cors({
-    origin: "https://port.contact",
+    origin: "http://localhost:3000",
     allowedHeaders: ["Content-Type"],
     credentials: true,
   })
@@ -73,24 +71,67 @@ app.use((err, req, res, next) => {
   res.status(err).send(err);
 });
 
-// socket
-io.on("connection", (socket) => {
-  const user = socket.handshake.query.user;
-  // socket.join(user.username);
+// sockets //////////////////////////////////////////
 
-  socket.on("message", (msg) => {
-    console.log(
-      `Messate to: ${msg.recipientId}. From: ${msg.senderId}. Content: ${msg.content}`
-    );
-    createMessage(msg);
+io.of("/chat").on("connection", (socket) => {
+  let userId = "";
+  let socketId = "";
+  let username = "";
+  let currRoom = "";
+  const userObj = socket.handshake.query;
+  socketId = socket.id;
+  userId = userObj._id;
+  username = userObj.username;
+
+  socket.on("online status", (status) => {
+    socket.broadcast.emit("user status update", status);
   });
 
-  console.log(`User ${user.username} connected to socket`);
+  socket.on("user status back", (status) => {
+    socket.broadcast.emit("user status back", status);
+  });
+
+  socket.on("join room", async (userData) => {
+    if (currRoom) {
+      socket.leave(currRoom);
+    }
+    socket.join(userData.roomId);
+    currRoom = userData.roomId;
+
+    socket.broadcast.emit("user is live", userData);
+
+    console.log(`${username} enters ROOM ${userData.roomId}`);
+    const peeps = await io.of("/chat").in(userData.roomId).allSockets();
+    console.log(`Sockets in this room: ${Array.from(peeps)}`);
+    console.log(
+      `${username} is currently in rooms: ${Array.from(socket.rooms)}`
+    );
+  });
+
+  socket.on("message", async (msg, roomId) => {
+    // console.log(msg, roomId);
+    createMessage(msg)
+      .then((res) => {
+        io.of("/chat").in(roomId).emit("message", res);
+        console.log(`EMITTED: ${res.content} to ${roomId}`);
+      })
+      .catch((err) => console.log(err));
+  });
+
+  socket.on("log out", async (status) => {
+    await socket.broadcast.emit("user logged out", {
+      userId,
+      isLive: false,
+      isOnline: false,
+    });
+    socket.disconnect(true);
+  });
 });
 
-// routes
+// routes /////////////////////////////////////////////////////////////
 app.post("/register", createUser);
 app.post("/login", loginUser);
+app.post("/login/username", findUsername);
 app.get("/logout", logoutUser);
 
 app.get("/", getUser);
@@ -98,7 +139,7 @@ app.route("/messages/:connectionId").get(getMessages);
 app.route("/messages/:messageId/").get(getMessageById).delete(deleteMessage);
 app.route("/connections").post(addConnection).delete(deleteConnection);
 
-// IIFE to start db connection and express listening
+// IIFE to start db connection and express listening ////////////////////
 (async () => {
   await connectDB();
   http.listen(PORT, () => {
