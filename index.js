@@ -5,7 +5,7 @@ const app = express();
 const http = require("http").createServer(app);
 const io = require("socket.io")(http, {
   cors: {
-    origin: "http://port.contact",
+    origin: "https://port.contact",
     methods: ["GET", "POST", "DELETE"],
     credentials: true,
   },
@@ -44,7 +44,7 @@ const IN_PROD = NODE_ENV === "production";
 // middlewares ///////////////////////////////////////////
 app.use(
   cors({
-    origin: "http://port.contact",
+    origin: "https://port.contact",
     allowedHeaders: ["Content-Type"],
     credentials: true,
   })
@@ -143,6 +143,6 @@ app.route("/connections").post(addConnection).delete(deleteConnection);
 (async () => {
   await connectDB();
   http.listen(PORT, () => {
-    console.log(colors.green.inverse(`Live on http://port.contact`));
+    console.log(colors.green.inverse(`Live on https://port.contact`));
   });
 })();
