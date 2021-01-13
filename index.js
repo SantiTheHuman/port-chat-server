@@ -1,3 +1,4 @@
+//~~ setup ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 require("dotenv").config();
 const cors = require("cors");
 const express = require("express");
@@ -13,35 +14,7 @@ const io = require("socket.io")(http, {
 const cookieParser = require("cookie-parser");
 const session = require("express-session");
 const colors = require("colors/safe");
-const { connectDB } = require("./models");
 
-const {
-  createUser,
-  loginUser,
-  logoutUser,
-  getUser,
-  deleteConnection,
-  addConnection,
-  findUsername,
-} = require("./controllers/user");
-const {
-  getMessages,
-  getMessageById,
-  createMessage,
-  deleteMessage,
-} = require("./controllers/message");
-const e = require("cors");
-
-const TWO_HOURS = 1000 * 60 * 60 * 2;
-const {
-  PORT = 4000,
-  SESS_NAME = "sid",
-  SESS_LIFETIME = TWO_HOURS,
-  NODE_ENV = "development",
-} = process.env;
-const IN_PROD = NODE_ENV === "production";
-
-// middlewares ///////////////////////////////////////////
 app.use(
   cors({
     origin: "https://port.contact",
@@ -52,6 +25,15 @@ app.use(
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+
+const TWO_HOURS = 1000 * 60 * 60 * 2;
+const {
+  PORT = process.env.PORT || 4000,
+  SESS_NAME = "sid",
+  SESS_LIFETIME = TWO_HOURS,
+  NODE_ENV = "development",
+} = process.env;
+const IN_PROD = NODE_ENV === "production";
 
 app.use(
   session({
@@ -71,8 +53,37 @@ app.use((err, req, res, next) => {
   res.status(err).send(err);
 });
 
-// sockets //////////////////////////////////////////
+//~~ imports ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+const { connectDB } = require("./models");
+const {
+  createUser,
+  loginUser,
+  logoutUser,
+  getUser,
+  deleteConnection,
+  addConnection,
+  findUsername,
+} = require("./controllers/user");
+const {
+  getMessages,
+  getMessageById,
+  createMessage,
+  deleteMessage,
+} = require("./controllers/message");
+// const e = require("cors");
 
+//~~ routes ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+app.post("/register", createUser);
+app.post("/login", loginUser);
+app.post("/login/username", findUsername);
+app.get("/logout", logoutUser);
+
+app.get("/", getUser);
+app.route("/messages/:connectionId").get(getMessages);
+app.route("/messages/:messageId/").get(getMessageById).delete(deleteMessage);
+app.route("/connections").post(addConnection).delete(deleteConnection);
+
+//~~ sockets ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 io.of("/chat").on("connection", (socket) => {
   let userId = "";
   let socketId = "";
@@ -128,18 +139,7 @@ io.of("/chat").on("connection", (socket) => {
   });
 });
 
-// routes /////////////////////////////////////////////////////////////
-app.post("/register", createUser);
-app.post("/login", loginUser);
-app.post("/login/username", findUsername);
-app.get("/logout", logoutUser);
-
-app.get("/", getUser);
-app.route("/messages/:connectionId").get(getMessages);
-app.route("/messages/:messageId/").get(getMessageById).delete(deleteMessage);
-app.route("/connections").post(addConnection).delete(deleteConnection);
-
-// IIFE to start db connection and express listening ////////////////////
+//~~ IIFE to start db connection and express listening ~~~~~~~~~~~~~~~~~~
 (async () => {
   await connectDB();
   http.listen(PORT, () => {
