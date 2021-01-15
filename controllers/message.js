@@ -19,7 +19,7 @@ exports.getMessages = async (userId, contactId) => {
   const messages = await Message.find()
     .or([
       { senderId: userId, recipientId: contactId },
-      { senderId: recipientId, recipientId: userId },
+      { senderId: contactId, recipientId: userId },
     ])
     .sort({ createdAt: -1 })
     .limit(20);
