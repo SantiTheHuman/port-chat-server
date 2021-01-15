@@ -6,7 +6,7 @@ const app = express();
 const http = require("http").createServer(app);
 const io = require("socket.io")(http, {
   cors: {
-    origin: "https://port.contact",
+    origin: process.env.ORIGIN,
     methods: ["GET", "POST", "DELETE"],
     credentials: true,
   },
@@ -17,7 +17,7 @@ const colors = require("colors/safe");
 
 app.use(
   cors({
-    origin: "https://port.contact",
+    origin: process.env.ORIGIN,
     allowedHeaders: ["Content-Type"],
     credentials: true,
   })
@@ -66,9 +66,9 @@ const {
 } = require("./controllers/user");
 const {
   getMessages,
-  getMessageById,
+  // getMessageById,
   createMessage,
-  deleteMessage,
+  // deleteMessage,
 } = require("./controllers/message");
 // const e = require("cors");
 
@@ -80,7 +80,7 @@ app.get("/logout", logoutUser);
 
 app.get("/", getUser);
 app.route("/messages/:connectionId").get(getMessages);
-app.route("/messages/:messageId/").get(getMessageById).delete(deleteMessage);
+// app.route("/messages/:messageId/").get(getMessageById).delete(deleteMessage);
 app.route("/connections").post(addConnection).delete(deleteConnection);
 
 //~~ sockets ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -143,6 +143,6 @@ io.of("/chat").on("connection", (socket) => {
 (async () => {
   await connectDB();
   http.listen(PORT, () => {
-    console.log(colors.green.inverse(`Live on https://port.contact`));
+    console.log(colors.green.inverse(`Live on ${PORT}`));
   });
 })();
