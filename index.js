@@ -79,7 +79,7 @@ app.post("/login/username", findUsername);
 app.get("/logout", logoutUser);
 
 app.get("/", getUser);
-app.route("/messages/:connectionId").get(getMessages);
+// app.route("/messages/:connectionId").get(getMessages);
 // app.route("/messages/:messageId/").get(getMessageById).delete(deleteMessage);
 app.route("/connections").post(addConnection).delete(deleteConnection);
 
@@ -110,6 +110,12 @@ io.of("/chat").on("connection", (socket) => {
     currRoom = userData.roomId;
 
     socket.broadcast.emit("user is live", userData);
+
+    const chatHistory = await getMessages(
+      userData.userId,
+      userData.recipientId
+    );
+    socket.emit("chat history", chatHistory);
 
     console.log(`${username} enters ROOM ${userData.roomId}`);
     const peeps = await io.of("/chat").in(userData.roomId).allSockets();
