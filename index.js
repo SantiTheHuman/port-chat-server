@@ -125,6 +125,10 @@ io.of("/chat").on("connection", (socket) => {
     );
   });
 
+  socket.on("live text", (liveText) => {
+    socket.to(currRoom).emit("live text", liveText);
+  });
+
   socket.on("message", async (msg, roomId) => {
     // console.log(msg, roomId);
     createMessage(msg)
