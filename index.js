@@ -7,18 +7,19 @@ const http = require("http").createServer(app);
 const io = require("socket.io")(http, {
   cors: {
     origin: process.env.ORIGIN,
-    methods: ["GET", "POST", "DELETE"],
     credentials: true,
   },
 });
 const cookieParser = require("cookie-parser");
 const session = require("express-session");
+const mongoDBStore = require("connect-mongodb-session")(session);
 const colors = require("colors/safe");
 
 app.use(
   cors({
     origin: process.env.ORIGIN,
-    allowedHeaders: ["Content-Type"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   })
 );
@@ -26,43 +27,61 @@ app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-const TWO_HOURS = 1000 * 60 * 60 * 2;
+// const TWO_HOURS = 1000 * 60 * 60 * 2;
 const {
   PORT = process.env.PORT || 4000,
-  SESS_NAME = "sid",
-  SESS_LIFETIME = TWO_HOURS,
+  // SESS_NAME = "port-session",
+  SESS_LIFETIME = 1000 * 60 * 60 * 24 * 30,
   NODE_ENV = "development",
 } = process.env;
 const IN_PROD = NODE_ENV === "production";
 
+const store = new mongoDBStore({
+  uri: process.env.CONNECTION_URI,
+  collection: "sessions",
+  expires: SESS_LIFETIME,
+});
+
 app.use(
   session({
-    name: SESS_NAME,
+    name: process.env.SESS_NAME,
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: {
       maxAge: SESS_LIFETIME,
-      sameSite: true,
+      sameSite: false,
       secure: IN_PROD,
     },
+    store: store,
   })
 );
 
-app.use((err, req, res, next) => {
-  res.status(err).send(err);
-});
+// app.use((req, res, next) => {
+//   if (req.session.userId) {
+//     User.findById(req.session.userId)
+//       .then((user) => {
+//         req.user = user;
+//         next();
+//       })
+//       .catch((err) => {
+//         console.log(err);
+//       });
+//   }
+// });
 
 //~~ imports ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 const { connectDB } = require("./models");
 const {
-  createUser,
+  checkSession,
+  handleUsername,
   loginUser,
+  registerUser,
+  changeUsername,
   logoutUser,
-  getUser,
+  deleteUser,
   deleteConnection,
   addConnection,
-  findUsername,
 } = require("./controllers/user");
 const {
   getMessages,
@@ -70,15 +89,20 @@ const {
   createMessage,
   // deleteMessage,
 } = require("./controllers/message");
-// const e = require("cors");
+const { User } = require("./models");
+// const isAuth = require("./middleware/is-auth");
 
 //~~ routes ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-app.post("/register", createUser);
-app.post("/login", loginUser);
-app.post("/login/username", findUsername);
-app.get("/logout", logoutUser);
+app.get("/auth", checkSession);
 
-app.get("/", getUser);
+app.get("/login/:username", handleUsername);
+app.post("/login", loginUser);
+app.put("/register", registerUser);
+app.get("/logout/", logoutUser);
+app.delete("/logout/", deleteUser);
+
+app.put("/user/", changeUsername);
+
 // app.route("/messages/:connectionId").get(getMessages);
 // app.route("/messages/:messageId/").get(getMessageById).delete(deleteMessage);
 app.route("/connections").post(addConnection).delete(deleteConnection);

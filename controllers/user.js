@@ -1,5 +1,6 @@
 require("dotenv").config();
 const { User } = require("../models");
+// const jwt = require("jsonwebtoken");
 
 // let userId = "";
 
@@ -13,7 +14,74 @@ const { User } = require("../models");
 //   userId = id;
 // };
 
-exports.createUser = async (req, res, next) => {
+exports.checkSession = async (req, res, next) => {
+  // console.log(req.session.userId);
+
+  if (req.session.userId) {
+    const userId = req.session.userId;
+    const user = await User.findById(userId);
+    console.log(`Session user: ${user}`);
+    return res.status(200).json(user);
+  } else {
+    console.log("nope");
+    return res.status(204).send();
+  }
+};
+
+exports.handleUsername = async (req, res, next) => {
+  const usernameInput = req.params.username;
+  // console.log(usernameInput);
+  const userExists = await User.findOne({ username: usernameInput });
+  if (userExists) {
+    console.log(`${usernameInput} exists`);
+    res.status(200).send(`${usernameInput} exists`);
+  } else {
+    User.create(
+      { username: usernameInput, status: "temp" },
+      function (err, user) {
+        if (err) {
+          console.log(err);
+          return err;
+        }
+        req.session.userId = user._id;
+        console.log(
+          `~~Temp User created: ${user} ~~Session initiated: ${JSON.stringify(
+            req.session
+          )}`
+        );
+        res.status(201).json(user);
+      }
+    );
+  }
+};
+
+exports.loginUser = async (req, res, next) => {
+  const { username, password } = req.body;
+  User.authenticate(username, password, (err, user) => {
+    if (err) {
+      console.log(err);
+      return res.status(401).json(err);
+    } else {
+      req.session.userId = user._id;
+      console.log(`Session user: ${user}`);
+      return res.status(200).json(user);
+    }
+  });
+};
+
+exports.registerUser = async (req, res, next) => {
+  User.findOneAndUpdate(
+    { _id: req.session.userId },
+    { email: req.body.email, password: req.body.password, status: "saved" },
+    function (err, user) {
+      if (err) {
+        console.log(err);
+        return res.status(400).json(err);
+      }
+      return res.status(200).json(user);
+    }
+  );
+
   User.create(req.body, function (err, user) {
     if (err) {
       console.log(err);
@@ -34,80 +102,56 @@ exports.createUser = async (req, res, next) => {
   });
 };
 
-exports.loginUser = async (req, res, next) => {
-  const { username, password } = req.body;
-  User.authenticate(username, password, (err, user) => {
-    if (err) {
-      console.log(err);
-      return res.status(402).json({
-        success: false,
-        message: err,
-      });
-    } else if (user) {
-      req.session.userId = user._id;
-      console.log(`Session user: ${user}`);
-      return res.status(200).json({
-        success: true,
-        user: user,
-      });
+exports.changeUsername = async (req, res, next) => {
+  const userId = req.session.userId;
+  const { newUsername } = req.body;
+  // console.log(userId);
+  User.findOneAndUpdate(
+    { _id: userId },
+    { username: newUsername },
+    function (err, user) {
+      if (err) {
+        return res.status(400).send(err);
+      }
+      console.log(`Username changed to ${newUsername}`);
+      return res.status(200).send();
     }
-  });
-};
-
-exports.findUsername = async (req, res, next) => {
-  const usernameInput = req.body.username;
-  console.log(usernameInput);
-  const userExists = await User.findOne({ username: usernameInput });
-  if (userExists) {
-    return res.json({
-      success: true,
-    });
-  } else {
-    return res.json({
-      success: false,
-    });
-  }
+  );
 };
 
 exports.logoutUser = async (req, res, next) => {
-  if (req.session.cookie) {
-    req.session.destroy(function (err) {
-      if (err) {
-        console.log(err);
-        return res.status(403).json({
-          success: false,
-          message: err,
-        });
-      }
-      res.clearCookie("sid");
-      console.log("User logged out.");
-      return res.status(202).json({
-        success: true,
-        message: "User logged out.",
-      });
-    });
-  } else {
-    return res.status(403).json({
-      success: false,
-      message: "No session to destroy found.",
-    });
-  }
+  req.session.destroy(function (err) {
+    if (err) {
+      console.log(err);
+      return res.status(403).json(err);
+    }
+    console.log("User logged out.");
+    return res.status(200).send();
+  });
+  res.clearCookie(process.env.SESS_NAME, { path: "/" });
 };
 
-exports.getUser = async (req, res, next) => {
-  if (req.session.userId) {
-    const userId = req.session.userId;
-    const user = await User.findById(userId);
-    console.log(`Session user: ${user}`);
-    return res.json({
-      authenticated: true,
-      user: user,
-    });
-  } else {
-    return res.json({
-      authenticated: false,
-    });
-  }
+exports.deleteUser = async (req, res, next) => {
+  const userId = req.session.userId;
+  User.findOneAndUpdate(
+    { _id: userId },
+    { username: userId, connections: null, status: "del" },
+    function (err, user) {
+      if (err) {
+        console.log(err);
+        return res.status(400).send(err);
+      }
+      req.session.destroy(function (err) {
+        if (err) {
+          console.log(err);
+          return res.status(403).json(err);
+        }
+      });
+      console.log(`User data deleted.`);
+      res.clearCookie(process.env.SESS_NAME, { path: "/" });
+      return res.status(200).send();
+    }
+  );
 };
 
 exports.addConnection = async (req, res, next) => {

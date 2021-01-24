@@ -19,15 +19,14 @@ const UserSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: true,
+      required: false,
     },
     connections: Array,
+    status: String,
     data: Array,
   },
   { timestamps: true }
 );
-
-// connections: Array
 
 UserSchema.pre("save", function (next) {
   var user = this;
