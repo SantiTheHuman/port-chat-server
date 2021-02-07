@@ -1,22 +1,7 @@
 require("dotenv").config();
 const { User } = require("../models");
-// const jwt = require("jsonwebtoken");
-
-// let userId = "";
-
-// exports.userId = userId;
-
-// exports.getUserId = () => {
-//   return userId;
-// };
-
-// const setUserId = (id) => {
-//   userId = id;
-// };
 
 exports.checkSession = async (req, res, next) => {
-  // console.log(req.session.userId);
-
   if (req.session.userId) {
     const userId = req.session.userId;
     const user = await User.findById(userId);
@@ -30,7 +15,6 @@ exports.checkSession = async (req, res, next) => {
 
 exports.handleUsername = async (req, res, next) => {
   const usernameInput = req.params.username;
-  // console.log(usernameInput);
   const userExists = await User.findOne({ username: usernameInput });
   if (userExists) {
     console.log(`${usernameInput} exists`);
@@ -105,7 +89,6 @@ exports.registerUser = async (req, res, next) => {
 exports.changeUsername = async (req, res, next) => {
   const userId = req.session.userId;
   const { newUsername } = req.body;
-  // console.log(userId);
   User.findOneAndUpdate(
     { _id: userId },
     { username: newUsername },
@@ -155,9 +138,6 @@ exports.deleteUser = async (req, res, next) => {
 };
 
 exports.addConnection = async (req, res, next) => {
-  // if (req.session.userId) {
-  //   console.log(req.session, req.session.userId, req.body);
-  // }
   if (req.session.userId) {
     const user = await User.findById(req.session.userId);
     const newContactExists = await User.findOne({
@@ -191,12 +171,10 @@ exports.addConnection = async (req, res, next) => {
 };
 
 exports.deleteConnection = async (req, res, next) => {
-  // console.log(req.session, req.session.userId, req.body);
   if (req.session.userId) {
     try {
       const myId = req.session.userId;
       const name = req.body.username;
-      // console.log(myId, contactId);
       User.findByIdAndUpdate(
         myId,
         { $pull: { connections: { username: name } } },
@@ -222,7 +200,3 @@ exports.deleteConnection = async (req, res, next) => {
     });
   }
 };
-
-// exports.globalUserId = globalUserId;
-// exports.getUserId = getUserId;
-// exports.setUserId = setUserId;

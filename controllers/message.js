@@ -1,21 +1,6 @@
 const { Message } = require("../models");
 
-// exports.getMessages = async (req, res) => {
-//   const userId = req.session.userId;
-//   const recipientId = req.params.connectionId;
-//   const messages = await Message.find()
-//     .or([
-//       { senderId: userId, recipientId: recipientId },
-//       { senderId: recipientId, recipientId: userId },
-//     ])
-//     .sort({ createdAt: -1 })
-//     .limit(20);
-//   return res.status(200).json(messages);
-// };
-
 exports.getMessages = async (userId, contactId) => {
-  // const userId = req.session.userId;
-  // const recipientId = req.params.connectionId;
   const messages = await Message.find()
     .or([
       { senderId: userId, recipientId: contactId },
@@ -42,10 +27,6 @@ exports.createMessage = async (msg) => {
     return newMessage;
   } catch (err) {
     console.log(err);
-    // return res.status(400).json({
-    //   success: false,
-    //   message: err,
-    // });
   }
 };
 

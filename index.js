@@ -27,10 +27,8 @@ app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// const TWO_HOURS = 1000 * 60 * 60 * 2;
 const {
   PORT = process.env.PORT || 4000,
-  // SESS_NAME = "port-session",
   SESS_LIFETIME = 1000 * 60 * 60 * 24 * 30,
   NODE_ENV = "development",
 } = process.env;
@@ -57,19 +55,6 @@ app.use(
   })
 );
 
-// app.use((req, res, next) => {
-//   if (req.session.userId) {
-//     User.findById(req.session.userId)
-//       .then((user) => {
-//         req.user = user;
-//         next();
-//       })
-//       .catch((err) => {
-//         console.log(err);
-//       });
-//   }
-// });
-
 //~~ imports ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 const { connectDB } = require("./models");
 const {
@@ -83,14 +68,8 @@ const {
   deleteConnection,
   addConnection,
 } = require("./controllers/user");
-const {
-  getMessages,
-  // getMessageById,
-  createMessage,
-  // deleteMessage,
-} = require("./controllers/message");
+const { getMessages, createMessage } = require("./controllers/message");
 const { User } = require("./models");
-// const isAuth = require("./middleware/is-auth");
 
 //~~ routes ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 app.get("/auth", checkSession);
@@ -103,8 +82,6 @@ app.delete("/logout/", deleteUser);
 
 app.put("/user/", changeUsername);
 
-// app.route("/messages/:connectionId").get(getMessages);
-// app.route("/messages/:messageId/").get(getMessageById).delete(deleteMessage);
 app.route("/connections").post(addConnection).delete(deleteConnection);
 
 //~~ sockets ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -154,7 +131,6 @@ io.of("/chat").on("connection", (socket) => {
   });
 
   socket.on("message", async (msg, roomId) => {
-    // console.log(msg, roomId);
     createMessage(msg)
       .then((res) => {
         io.of("/chat").in(roomId).emit("message", res);
