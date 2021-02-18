@@ -57,33 +57,16 @@ exports.registerUser = async (req, res, next) => {
   User.findOneAndUpdate(
     { _id: req.session.userId },
     { email: req.body.email, password: req.body.password, status: "saved" },
+    { new: true },
     function (err, user) {
       if (err) {
         console.log(err);
         return res.status(400).json(err);
       }
+      console.log(user);
       return res.status(200).json(user);
     }
   );
-
-  User.create(req.body, function (err, user) {
-    if (err) {
-      console.log(err);
-      return res.status(401).json({
-        success: false,
-        message: err,
-      });
-    } else {
-      req.session.userId = user._id;
-      console.log(
-        `~~User created: ${user} ~~Session initiated: ${req.session}`
-      );
-      return res.json({
-        success: true,
-        user: user,
-      });
-    }
-  });
 };
 
 exports.changeUsername = async (req, res, next) => {
