@@ -8,7 +8,7 @@ exports.checkSession = async (req, res, next) => {
     console.log(`Session user: ${user}`);
     return res.status(200).json(user);
   } else {
-    console.log("nope");
+    console.log("No session found on page load.");
     return res.status(204).send();
   }
 };
@@ -92,7 +92,7 @@ exports.logoutUser = async (req, res, next) => {
       return res.status(403).json(err);
     }
     console.log("User logged out.");
-    return res.status(200).send();
+    res.status(200).send();
   });
   res.clearCookie(process.env.SESS_NAME, { path: "/" });
 };

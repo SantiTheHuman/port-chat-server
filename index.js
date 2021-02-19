@@ -77,10 +77,10 @@ app.get("/auth", checkSession);
 app.get("/login/:username", handleUsername);
 app.post("/login", loginUser);
 app.put("/register", registerUser);
-app.get("/logout/", logoutUser);
-app.delete("/logout/", deleteUser);
+app.get("/logout", logoutUser);
+app.delete("/logout", deleteUser);
 
-app.put("/user/", changeUsername);
+app.put("/user", changeUsername);
 
 app.route("/connections").post(addConnection).delete(deleteConnection);
 
