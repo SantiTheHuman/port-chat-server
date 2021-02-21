@@ -28,7 +28,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 const {
-  PORT = process.env.PORT || 4000,
+  PORT = process.env.PORT || 5000,
   SESS_LIFETIME = 1000 * 60 * 60 * 24 * 30,
   NODE_ENV = "development",
 } = process.env;
@@ -85,65 +85,62 @@ app.put("/user", changeUsername);
 app.route("/connections").post(addConnection).delete(deleteConnection);
 
 //~~ sockets ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-io.of("/chat").on("connection", (socket) => {
-  let userId = "";
-  let socketId = "";
-  let username = "";
-  let currRoom = "";
-  const userObj = socket.handshake.query;
-  socketId = socket.id;
-  userId = userObj._id;
-  username = userObj.username;
+io.of("/chat").on("connection", async (socket) => {
+  const { _id, username, connections } = await socket.handshake.query;
+  let contacts = JSON.parse(connections);
+  let recipient = {};
 
-  socket.on("online status", (status) => {
-    socket.broadcast.emit("user status update", status);
+  socket.join(_id);
+  contacts.forEach((c) => {
+    socket.join(c._id);
+    socket.to(c._id).emit("get status", _id);
+    console.log(`${username} connects and asks ${c.username} for status'`);
   });
 
-  socket.on("user status back", (status) => {
-    socket.broadcast.emit("user status back", status);
+  socket.on("status", ({ contact, status }) => {
+    const c = JSON.parse(contact);
+    socket.to(c._id).emit("status", { userId: _id, status });
+    console.log(`${username} sends status '${status}' to ${c.username}.'`);
   });
 
-  socket.on("join room", async (userData) => {
-    if (currRoom) {
-      socket.leave(currRoom);
-    }
-    socket.join(userData.roomId);
-    currRoom = userData.roomId;
-
-    socket.broadcast.emit("user is live", userData);
-
-    const chatHistory = await getMessages(
-      userData.userId,
-      userData.recipientId
-    );
+  socket.on("live", async (contact) => {
+    recipient = await JSON.parse(contact);
+    console.log(recipient);
+    contacts.forEach((c) => {
+      let status;
+      c._id === recipient._id ? (status = "live") : (status = "online");
+      socket.to(c._id).emit("status", { userId: _id, status });
+      console.log(
+        `${username} sends status '${status}' to '${c.username}'s room.'`
+      );
+    });
+    const chatHistory = await getMessages(_id, recipient._id);
     socket.emit("chat history", chatHistory);
-
-    console.log(`${username} enters ROOM ${userData.roomId}`);
-    const peeps = await io.of("/chat").in(userData.roomId).allSockets();
-    console.log(`Sockets in this room: ${Array.from(peeps)}`);
-    console.log(
-      `${username} is currently in rooms: ${Array.from(socket.rooms)}`
-    );
   });
 
-  socket.on("live text", (liveText) => {
-    socket.to(currRoom).emit("live text", liveText);
+  socket.on("my rooms", async () => {
+    io.of("/Chat")
+      .allSockets()
+      .then((ids) => console.log(ids));
   });
 
-  socket.on("message", async (msg, roomId) => {
+  // // socket.on("live text", (liveText) => {
+  // //   socket.to(inRoom).emit("live text", liveText);
+  // // });
+
+  socket.on("message", async (msg) => {
     createMessage(msg)
       .then((res) => {
-        io.of("/chat").in(roomId).emit("message", res);
-        console.log(`EMITTED: ${res.content} to ${roomId}`);
+        io.of("/chat").in(res.recipientId).emit("message", res);
       })
       .catch((err) => console.log(err));
   });
-
-  socket.on("log out", async (status) => {
-    await socket.broadcast.emit("user logged out", {
-      userId,
-      isLive: false,
-      isOnline: false,
+  socket.on("log out", () => {
+    contacts.forEach((c) => {
+      socket.to(c._id).emit("status", { userId: _id, status: null });
+      console.log(
+        `${username} sends status 'LOGGED OUT' to '${c.username}'s room.'`
+      );
     });
     socket.disconnect(true);
   });

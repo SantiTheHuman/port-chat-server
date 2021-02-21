@@ -99,25 +99,21 @@ exports.logoutUser = async (req, res, next) => {
 
 exports.deleteUser = async (req, res, next) => {
   const userId = req.session.userId;
-  User.findOneAndUpdate(
-    { _id: userId },
-    { username: userId, connections: null, status: "del" },
-    function (err, user) {
+  User.findOneAndDelete({ _id: userId }, function (err) {
+    if (err) {
+      console.log(err);
+      return res.status(400).send(err);
+    }
+    req.session.destroy(function (err) {
       if (err) {
         console.log(err);
-        return res.status(400).send(err);
+        return res.status(403).json(err);
       }
-      req.session.destroy(function (err) {
-        if (err) {
-          console.log(err);
-          return res.status(403).json(err);
-        }
-      });
-      console.log(`User data deleted.`);
-      res.clearCookie(process.env.SESS_NAME, { path: "/" });
-      return res.status(200).send();
-    }
-  );
+    });
+    console.log(`User data deleted.`);
+    res.clearCookie(process.env.SESS_NAME, { path: "/" });
+    return res.status(200).send();
+  });
 };
 
 exports.addConnection = async (req, res, next) => {
