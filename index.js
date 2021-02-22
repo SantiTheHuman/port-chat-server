@@ -88,34 +88,27 @@ app.route("/connections").post(addConnection).delete(deleteConnection);
 io.of("/chat").on("connection", async (socket) => {
   const { _id, username, connections } = await socket.handshake.query;
   let contacts = JSON.parse(connections);
-  let recipient = {};
+  let recipient;
 
   socket.join(_id);
+  socket.to(_id).emit("ask status", _id);
   contacts.forEach((c) => {
     socket.join(c._id);
-    socket.to(c._id).emit("get status", _id);
-    console.log(`${username} connects and asks ${c.username} for status'`);
   });
 
-  socket.on("status", ({ contact, status }) => {
-    const c = JSON.parse(contact);
-    socket.to(c._id).emit("status", { userId: _id, status });
-    console.log(`${username} sends status '${status}' to ${c.username}.'`);
-  });
-
-  socket.on("live", async (contact) => {
-    recipient = await JSON.parse(contact);
-    console.log(recipient);
+  socket.on("set recipient", async (userId) => {
     contacts.forEach((c) => {
-      let status;
-      c._id === recipient._id ? (status = "live") : (status = "online");
-      socket.to(c._id).emit("status", { userId: _id, status });
-      console.log(
-        `${username} sends status '${status}' to '${c.username}'s room.'`
-      );
+      c._id === userId
+        ? socket.to(c._id).emit("status", { userId: _id, status: "live" })
+        : socket.to(c._id).emit("status", { userId: _id, status: "online" });
     });
-    const chatHistory = await getMessages(_id, recipient._id);
+    recipient = userId;
+    const chatHistory = await getMessages(_id, userId);
     socket.emit("chat history", chatHistory);
+  });
+
+  socket.on("send status", async ({ userId, status }) => {
+    socket.to(userId).emit("status", { userId: _id, status });
   });
 
   socket.on("my rooms", async () => {
@@ -123,10 +116,6 @@ io.of("/chat").on("connection", async (socket) => {
       .allSockets()
       .then((ids) => console.log(ids));
   });
-
-  // // socket.on("live text", (liveText) => {
-  // //   socket.to(inRoom).emit("live text", liveText);
-  // // });
 
   socket.on("message", async (msg) => {
     createMessage(msg)
