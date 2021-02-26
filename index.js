@@ -134,10 +134,8 @@ io.of("/chat").on("connection", async (socket) => {
       .emit("ask status", { userId: _id, socketId: mySocketId, status });
   });
 
-  socket.on("send char", async ({ socketId, status }) => {
-    io.of("/chat")
-      .to(socketId)
-      .emit("ask status", { userId: _id, socketId: mySocketId, status });
+  socket.on("live text", async ({ input, socketId }) => {
+    io.of("/chat").to(socketId).emit("live text", input);
   });
 
   socket.on("send msg", async (msg) => {
