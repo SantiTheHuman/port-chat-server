@@ -107,12 +107,14 @@ io.of("/chat").on("connection", async (socket) => {
   });
 
   socket.on("send status", async ({ userId, socketId, status }) => {
-    console.log("send status", userId, socketId, status);
-    socketId &&
-      io
-        .of("/chat")
-        .to(socketId)
-        .emit("status", { userId: _id, socketId: mySocketId, status });
+    // console.log("send status", userId, socketId, status);
+    io.of("/chat")
+      .to(socketId)
+      .emit("status", { userId: _id, socketId: mySocketId, status });
+    if (status === "live") {
+      const messages = await getMessages(_id, userId);
+      socket.emit("chat history", messages);
+    }
     const updated = await contacts.map((c) =>
       c._id === userId ? { ...c, socketId, status } : c
     );
@@ -132,45 +134,32 @@ io.of("/chat").on("connection", async (socket) => {
       .emit("ask status", { userId: _id, socketId: mySocketId, status });
   });
 
-  // socket.on("set recipient", async ({ userId, live }) => {
-  //   console.log(userId, live);
-  //   const contact = await contacts.find((c) => (c._id = userId));
-  //   console.log(contact);
-
-  //   contact.socket &&
-  //     io
-  //       .of("/chat")
-  //       .to(contact.socket)
-  //       .emit("status", {
-  //         userId: _id,
-  //         contSocket: socketId,
-  //         status: live ? "live" : "online",
-  //       });
-  //   recipient = contact;
-  //   const chatHistory = await getMessages(_id, userId);
-  //   socket.emit("chat history", chatHistory);
-  // });
-
-  socket.on("log", () => {
-    console.log(contacts);
+  socket.on("send char", async ({ socketId, status }) => {
+    io.of("/chat")
+      .to(socketId)
+      .emit("ask status", { userId: _id, socketId: mySocketId, status });
   });
 
   socket.on("send msg", async (msg) => {
-    const contSocket = recipient.socket ? recipient.socket : null;
-    createMessage(msg)
+    const { senderId, recipientId, socketId, content } = msg;
+    createMessage({ senderId, recipientId, content })
       .then((res) => {
-        contSocket && io.of("/chat").to(contSocket).emit("msg received", res);
         socket.emit("msg sent", msg);
+        socketId && io.of("/chat").to(socketId).emit("msg received", res);
       })
       .catch((err) => console.log(err));
   });
 
   socket.on("log out", () => {
-    socket.to(_id).emit("status", { userId: _id, status: "offline" });
+    socket
+      .to(_id)
+      .emit("status", { userId: _id, socketId: null, status: null });
     socket.disconnect(true);
   });
   socket.on("disconnect", () => {
-    socket.to(_id).emit("status", { userId: _id, status: "offline" });
+    socket
+      .to(_id)
+      .emit("status", { userId: _id, socketId: null, status: null });
   });
 });
 
