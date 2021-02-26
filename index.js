@@ -87,51 +87,90 @@ app.route("/connections").post(addConnection).delete(deleteConnection);
 //~~ sockets ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 io.of("/chat").on("connection", async (socket) => {
   const { _id, username, connections } = await socket.handshake.query;
-  let contacts = JSON.parse(connections);
+  const mySocketId = socket.id;
+  const parsed = JSON.parse(connections);
+  let contacts = parsed.map((c) => ({
+    _id: c,
+    socket: null,
+    status: "offline",
+  }));
   let recipient;
 
-  socket.join(_id);
-  socket.to(_id).emit("ask status", _id);
   contacts.forEach((c) => {
     socket.join(c._id);
   });
-
-  socket.on("set recipient", async (userId) => {
-    contacts.forEach((c) => {
-      c._id === userId
-        ? socket.to(c._id).emit("status", { userId: _id, status: "live" })
-        : socket.to(c._id).emit("status", { userId: _id, status: "online" });
-    });
-    recipient = userId;
-    const chatHistory = await getMessages(_id, userId);
-    socket.emit("chat history", chatHistory);
+  socket.join(_id);
+  socket.to(_id).emit("ask status", {
+    userId: _id,
+    socketId: mySocketId,
+    status: "online",
   });
 
-  socket.on("send status", async ({ userId, status }) => {
-    socket.to(userId).emit("status", { userId: _id, status });
+  socket.on("send status", async ({ userId, socketId, status }) => {
+    console.log("send status", userId, socketId, status);
+    socketId &&
+      io
+        .of("/chat")
+        .to(socketId)
+        .emit("status", { userId: _id, socketId: mySocketId, status });
+    const updated = await contacts.map((c) =>
+      c._id === userId ? { ...c, socketId, status } : c
+    );
+    contacts = updated;
   });
 
-  socket.on("my rooms", async () => {
-    io.of("/Chat")
-      .allSockets()
-      .then((ids) => console.log(ids));
+  socket.on("update contact", async ({ userId, socketId, status }) => {
+    const updated = await contacts.map((c) =>
+      c._id === userId ? { ...c, socketId, status } : c
+    );
+    contacts = updated;
   });
 
-  socket.on("message", async (msg) => {
+  socket.on("ask status", async ({ socketId, status }) => {
+    io.of("/chat")
+      .to(socketId)
+      .emit("ask status", { userId: _id, socketId: mySocketId, status });
+  });
+
+  // socket.on("set recipient", async ({ userId, live }) => {
+  //   console.log(userId, live);
+  //   const contact = await contacts.find((c) => (c._id = userId));
+  //   console.log(contact);
+
+  //   contact.socket &&
+  //     io
+  //       .of("/chat")
+  //       .to(contact.socket)
+  //       .emit("status", {
+  //         userId: _id,
+  //         contSocket: socketId,
+  //         status: live ? "live" : "online",
+  //       });
+  //   recipient = contact;
+  //   const chatHistory = await getMessages(_id, userId);
+  //   socket.emit("chat history", chatHistory);
+  // });
+
+  socket.on("log", () => {
+    console.log(contacts);
+  });
+
+  socket.on("send msg", async (msg) => {
+    const contSocket = recipient.socket ? recipient.socket : null;
     createMessage(msg)
       .then((res) => {
-        io.of("/chat").in(res.recipientId).emit("message", res);
+        contSocket && io.of("/chat").to(contSocket).emit("msg received", res);
+        socket.emit("msg sent", msg);
       })
       .catch((err) => console.log(err));
   });
+
   socket.on("log out", () => {
-    contacts.forEach((c) => {
-      socket.to(c._id).emit("status", { userId: _id, status: null });
-      console.log(
-        `${username} sends status 'LOGGED OUT' to '${c.username}'s room.'`
-      );
-    });
+    socket.to(_id).emit("status", { userId: _id, status: "offline" });
     socket.disconnect(true);
+  });
+  socket.on("disconnect", () => {
+    socket.to(_id).emit("status", { userId: _id, status: "offline" });
   });
 });
 
