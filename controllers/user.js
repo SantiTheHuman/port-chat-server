@@ -117,6 +117,7 @@ exports.deleteUser = async (req, res, next) => {
 };
 
 exports.addConnection = async (req, res, next) => {
+  console.log(req.body.username);
   if (req.session.userId) {
     const user = await User.findById(req.session.userId);
     const newContactExists = await User.findOne({
@@ -131,10 +132,7 @@ exports.addConnection = async (req, res, next) => {
       user.save();
       console.log(updatedContacts);
       console.log(user.connections);
-      return res.status(200).json({
-        success: true,
-        updatedContacts: user.connections,
-      });
+      return res.status(200).json(newContact);
     } else {
       return res.status(402).json({
         success: false,

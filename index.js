@@ -73,15 +73,12 @@ const { User } = require("./models");
 
 //~~ routes ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 app.get("/auth", checkSession);
-
 app.get("/login/:username", handleUsername);
 app.post("/login", loginUser);
 app.put("/register", registerUser);
 app.get("/logout", logoutUser);
 app.delete("/logout", deleteUser);
-
 app.put("/user", changeUsername);
-
 app.route("/connections").post(addConnection).delete(deleteConnection);
 
 //~~ sockets ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -103,22 +100,18 @@ io.of("/chat").on("connection", async (socket) => {
   socket.to(_id).emit("ask status", {
     userId: _id,
     socketId: mySocketId,
-    status: "online",
   });
 
   socket.on("send status", async ({ userId, socketId, status }) => {
-    // console.log("send status", userId, socketId, status);
-    io.of("/chat")
-      .to(socketId)
-      .emit("status", { userId: _id, socketId: mySocketId, status });
+    socketId &&
+      io
+        .of("/chat")
+        .to(socketId)
+        .emit("status", { userId: _id, socketId: mySocketId, status });
     if (status === "live") {
       const messages = await getMessages(_id, userId);
       socket.emit("chat history", messages);
     }
-    const updated = await contacts.map((c) =>
-      c._id === userId ? { ...c, socketId, status } : c
-    );
-    contacts = updated;
   });
 
   socket.on("update contact", async ({ userId, socketId, status }) => {
@@ -129,9 +122,10 @@ io.of("/chat").on("connection", async (socket) => {
   });
 
   socket.on("ask status", async ({ socketId, status }) => {
-    io.of("/chat")
-      .to(socketId)
-      .emit("ask status", { userId: _id, socketId: mySocketId, status });
+    socket.to(_id).emit("ask status", {
+      userId: _id,
+      socketId: mySocketId,
+    });
   });
 
   socket.on("live text", async ({ input, socketId }) => {
