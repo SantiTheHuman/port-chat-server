@@ -121,7 +121,7 @@ io.of("/chat").on("connection", async (socket) => {
     contacts = updated;
   });
 
-  socket.on("ask status", async ({ socketId, status }) => {
+  socket.on("ask status", async () => {
     socket.to(_id).emit("ask status", {
       userId: _id,
       socketId: mySocketId,

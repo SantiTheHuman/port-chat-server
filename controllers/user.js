@@ -128,9 +128,8 @@ exports.addConnection = async (req, res, next) => {
         _id: newContactExists._id,
         username: newContactExists.username,
       };
-      const updatedContacts = await user.connections.push(newContact);
+      await user.connections.push(newContact);
       user.save();
-      console.log(updatedContacts);
       console.log(user.connections);
       return res.status(200).json(newContact);
     } else {
