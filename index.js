@@ -33,9 +33,9 @@ const {
   DOMAIN = process.env.DOMAIN || null,
   SAME_SITE = process.env.SAME_SITE || false,
   PROXY = process.env.PROXY || true,
-  TRUST_PROXY = process.env.TRUST_PROXY || 1,
-  SECURE_COOKIE = process.env.SECURE_COOKIE || false,
+  NODE_ENV = "development",
 } = process.env;
+const IN_PROD = NODE_ENV === "production";
 
 const store = new mongoDBStore({
   uri: process.env.CONNECTION_URI,
@@ -43,7 +43,7 @@ const store = new mongoDBStore({
   expires: SESS_LIFETIME,
 });
 
-app.set("trust proxy", TRUST_PROXY);
+app.set("trust proxy", 1);
 app.use(
   session({
     name: process.env.SESS_NAME,
@@ -56,7 +56,7 @@ app.use(
       sameSite: SAME_SITE,
       domain: DOMAIN,
       httpOnly: true,
-      secure: SECURE_COOKIE,
+      secure: IN_PROD,
     },
     store: store,
   })
