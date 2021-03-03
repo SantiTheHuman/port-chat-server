@@ -31,6 +31,7 @@ const {
   PORT = process.env.PORT || 5000,
   SESS_LIFETIME = process.env.SESS_LIFETIME || 2592000000,
   DOMAIN = process.env.DOMAIN || null,
+  SAME_SITE = process.env.SAME_SITE || false,
   NODE_ENV = "development",
 } = process.env;
 const IN_PROD = NODE_ENV === "production";
@@ -49,8 +50,8 @@ app.use(
     saveUninitialized: false,
     cookie: {
       maxAge: Number(SESS_LIFETIME),
-      sameSite: false,
-      domain: process.env.DOMAIN,
+      sameSite: SAME_SITE,
+      domain: DOMAIN,
       httpOnly: true,
       secure: IN_PROD,
     },
