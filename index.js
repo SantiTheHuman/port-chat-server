@@ -30,6 +30,7 @@ app.use(express.json());
 const {
   PORT = process.env.PORT || 5000,
   SESS_LIFETIME = process.env.SESS_LIFETIME || 2592000000,
+  DOMAIN = process.env.DOMAIN || null,
   NODE_ENV = "development",
 } = process.env;
 const IN_PROD = NODE_ENV === "production";
@@ -49,7 +50,7 @@ app.use(
     cookie: {
       maxAge: Number(SESS_LIFETIME),
       sameSite: false,
-      domain: "port.contact",
+      domain: process.env.DOMAIN,
       httpOnly: true,
       secure: IN_PROD,
     },
