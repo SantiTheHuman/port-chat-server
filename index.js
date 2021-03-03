@@ -49,6 +49,8 @@ app.use(
     cookie: {
       maxAge: Number(SESS_LIFETIME),
       sameSite: false,
+      domain: "port.contact",
+      httpOnly: true,
       secure: IN_PROD,
     },
     store: store,
