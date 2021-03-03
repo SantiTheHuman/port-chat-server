@@ -48,6 +48,7 @@ app.use(
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
+    proxy: true,
     cookie: {
       maxAge: Number(SESS_LIFETIME),
       sameSite: SAME_SITE,
