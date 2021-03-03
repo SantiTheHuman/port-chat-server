@@ -32,6 +32,7 @@ const {
   SESS_LIFETIME = process.env.SESS_LIFETIME || 2592000000,
   DOMAIN = process.env.DOMAIN || null,
   SAME_SITE = process.env.SAME_SITE || false,
+  PROXY = process.env.PROXY || true,
   NODE_ENV = "development",
 } = process.env;
 const IN_PROD = NODE_ENV === "production";
@@ -42,13 +43,14 @@ const store = new mongoDBStore({
   expires: SESS_LIFETIME,
 });
 
+app.set("trust proxy", 1);
 app.use(
   session({
     name: process.env.SESS_NAME,
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    proxy: true,
+    proxy: PROXY,
     cookie: {
       maxAge: Number(SESS_LIFETIME),
       sameSite: SAME_SITE,
